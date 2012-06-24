@@ -1,0 +1,100 @@
+swap    ( n m - m n ) swap top two items on the data stack
+dup    ( n - n n ) make a copy of the top data stack item
+drop    ( n - ) throw away the top data stack item
+>r    ( n - ) (R - n ) push the top item of the data stack onto the return stack
+r    ( - n ) (R n - n ) copy the top item of the return stack onto the data stack
+r>     ( - n ) (R n - ) move top item on return stack to data stack
+sp!    ( ... - ) empty the data stack
+over    ( n m - n m n ) copy 2nd data stack item to top of data stack
+?dup    ( n - n n | - 0 ) duplicate top data stack item if not 0
+execute    ( a - ) use the top data stack item as a function call
+and    ( n m - p ) bitwise AND top two data stack items and leave on top
+or     ( n m - p ) bitwise OR top two data stack items and leave on top
+xor    ( n m - p ) bitwise XOR top two data stack items and leave on top
+not    ( n - n' ) invert all bits on the top data stack item
++    ( n m - p ) add top two data stack items and leave on top
+-    ( n m - p ) subtract top data stack item from next item and leave on top
+negate    ( n - -n ) two's complement of top data stack item
+/mod    ( n m - q r ) return divide and modulus from top item into next item
+/    ( n m - q ) divide next data stack item by top and leave on top
+mod    ( n m - r ) modulus next data stack item by top and leave on top
+*    ( n m - p ) multiply next data stack item by top and leave on top
+=    ( n m - f ) leave a boolean on stack after equating top two data stack items
+<    ( n m - f ) leave a boolean on stack indicating if next is less than top
+>    ( n m - f ) leave a boolean on stack indicating if next is greater than top
+u<    ( u v - f ) leave a boolean on stack indicating if unsigned next is less than top
+u>    ( u b - f ) leave a boolean on stack indicating if unsigned next is greater than top
+abs    ( n - n|-n) top data stack item is made positive
+max    ( n m - n|m) leave maximum of top two stack items
+min     ( n m - n|m) leave minimum of top two stack items
+@    ( a - n ) return contents of memory using top stack item as the address (processor sized)
+!    ( n a - ) store next into memory using top as address (processor sized)
+c@    ( a - c ) return contents of memory using top stack item as the address (8 bit)
+c!    ( c a - ) store next into memory using top as address (8 bit)
+s@    ( a - h ) return contents of memory using top stack item as the address (16 bit)
+s!    ( h a - ) store next into memory using top as address (16 bit)
++b    ( b a - ) turn on b bits at address a: 0b10001 em +b
+-b    ( b a - ) turn off b bits at address a: 0b10001 em -b
+l@    ( a - n )return contents of memory using top stack item as the address (32 bit)
+l!    (n a - )store next into memory using top as address (processor sized)
+cmove    ( s d n - ) move n bytes from s to d
+fill    ( s n x - )fill n bytes from s with x
+erase    ( s n - ) erase n bytes from s
+here    ( - a ) return address of end of dictionary
+allot    ( n - ) reserve n bytes after end of dictionary
+c,    ( c - ) allocate and 1 byte and put value in it
+,    ( n - ) allocate 1 cell and put n into it
+koff    turn off automatic key echo
+kon    turn on automatic key echo
+emit    ( c - ) send c to output device
+cr    send end of line to output device
+count    ( a - a' c ) leave first character and incremented address on stack
+type    ( a n - ) output n characters starting at a
+base    ( - a ) return address of number radix
+hex    interpret all following numbers as hex
+decimal    interpret all subsequent numbers as decimal
+hold    ( c - ) hold a character in number sequence
+<#    inititiate a number sequence
+#    ( n - n' ) convert a digit from n
+#s    ( n - 0 ) convert all digits in n
+sign    ( n - ) prepend sign to number sequence if n is negative
+#>    ( n - a c ) finish number sequence and return address and count
+.r    ( m n - ) print m in right field of n digits
+.    ( n - ) print n in current number base
+shift    ( n m - p ) shift n by m bit left for minus and right for positive
+.b    ( n - ) print n in binary
+.d    ( n - ) print n in decimal
+.h    ( n - ) print n in hex
+.s    print number of items on data stack
+words    list all words in dictionary
+dump    ( a n - ) dump n 16-byte rows of memory starting at address a
+word    ( c - ) parse characters up to c from input to here
+
+constant    ( n - ) give n a name
+variable    ( n - ) give n a place to be stored at a name
+:    start a macro definition
+]    enter macro mode
+[    exit macro mode
+;    end a macro
+literal    ( n - ) enter a literal value into a macro
+if    ( n - ) execute following code if top of stack is non-zero
+else    otherwise part of an if statement
+endif    end of else or if statement
+begin    start of a loop construct
+again    end of a continuous loop construct
+while    ( n - ) conditional choice in a loop construct
+repeat    go back to the begin part
+until    ( n - ) go back to the begin statement if stack is zero
+for    ( n - ) start of a loop which runs n times
+next    end of a for loop
+exit    exit macro
+'    ( - a ) get execution address of following word
+"    ( - s ) enclose text up to next " in a count prefixed string
+reveal    allow macro to call itself
+."    print text up until next "
+(    start of comment till end of line or )
+>b    ( a - ) put machine into execution queue
+help    print list of one liners about words in dictionary
+
+    def test(function=nothing, dstack=(), stacks=(0,0), d=(), r=(),
+             rstack=(), arg=(), test=0, mem=(), truth='True', diagnostic='None'):

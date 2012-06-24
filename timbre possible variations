@@ -1,0 +1,30 @@
+Timbre file variations:
+ as a class
+ as words in a file - easier on the eye and fingers
+ 
+Models
+stack
+ - stack cells can hold anything
+ 1. separate list with append and pop
+ 2. fixed list with changing index possibly caching top and second
+ 3. part of memory list and like 2.
+ memory
+ 1. fixed size list where one item holds anything, byte, cell
+ 2. like 1 but each item is limited to a byte and endian order is chosen
+ dictionary
+ 1. internal - python relational dicitonaries for normal and immediates
+ 2. external - link to previous, bit tagged length, name as cells, ii
+ 3. external - linked list of lists containing link, immediate flag, ii,
+               address of body in memory
+ 4. external - python dictionary of lists containing link, immediate flag,
+               ii, address of body in memory
+               ? what about redefinition - replace? make into list
+
+If a dictionary header is [MACRO, self.cii, a], perhaps a more general approach would be
+the first entry is the compile behaviour, the second entry is the intrpretive behaviour
+and the third entry is an arguement to the interpret behaviour. if the word is just a macro
+then MACRO would just compile a pointer to the interpretive behaviour. If it is a COMPILER
+then it would execute the intrepretive behaviour. so the interpretre has two states. in
+ interpretive mode it just executes the second beahviuoru. in compil;e mode it jsut executes
+ the first behaviour. as an alternative to a flat list, it could be: [[xii, a], compiler].
+the first behavour is a list with any argruments it nends the second is the compiler beahvourv.
