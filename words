@@ -69,12 +69,12 @@ shift    ( n m - p ) shift n by m bit left for minus and right for positive
 words    list all words in dictionary
 dump    ( a n - ) dump n 16-byte rows of memory starting at address a
 word    ( c - ) parse characters up to c from input to here
-
 constant    ( n - ) give n a name
 variable    ( n - ) give n a place to be stored at a name
-:    start a macro definition
+
 ]    enter macro mode
 [    exit macro mode
+:    start a macro definition
 ;    end a macro
 literal    ( n - ) enter a literal value into a macro
 if    ( n - ) execute following code if top of stack is non-zero
@@ -96,5 +96,3 @@ reveal    allow macro to call itself
 >b    ( a - ) put machine into execution queue
 help    print list of one liners about words in dictionary
 
-    def test(function=nothing, dstack=(), stacks=(0,0), d=(), r=(),
-             rstack=(), arg=(), test=0, mem=(), truth='True', diagnostic='None'):
