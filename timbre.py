@@ -25,13 +25,15 @@ def int2base(integer, base=10):
 	else:
 		return res[::-1]
 
-INTERPRETING = 1
+# states of interpretation
+EXECUTING = 1
 COMPILING = 2
+BUILDING = 3
 
 class Timbre(): # a Timbre interpreter
 	def __init__(self):
 		import sys, os
-		self.state = INTERPRETING
+		self.state = EXECUTING
 		self.dataStack = []
 		self.returnStack = []
 		self.dictionary = {}
@@ -42,6 +44,7 @@ class Timbre(): # a Timbre interpreter
 		self.memory = [0]*MSIZE
 		self.eol = '\n'
 		self.output = sys.stdout.write
+		self.ip = 0 # for macro execution
 #		if sys.stdout.name == '<stdout>':
 #			sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 #		def output(string):
@@ -65,7 +68,7 @@ class Timbre(): # a Timbre interpreter
 		self.decimal()
 		self.inp = 0
 		self.tib[self.inp] = 0
-		self.state = INTERPRETING
+		self.state = EXECUTING
 
 	def emptyDict(self):
 		self.dictionary.clear()
@@ -146,7 +149,22 @@ class Timbre(): # a Timbre interpreter
 			'reset': self.reset}
 		compilers = {
 		   ';': self.semicolon,
-		   '[': self.endmacro}
+		   '[': self.endmacro,
+		   'literal': self.literal,
+		   'ahead': self.ahead,
+		   'if': self.ifThen,
+		   'else': self.otherwise,
+		   'endif': self.endif,
+		   'begin': self.begin,
+		   'again': self.again,
+		   'while': self.whileThen,
+		   'until': self.until,
+		   'repeat': self.repeat,
+		   'for': self.forDo,
+		   'next': self.next,
+		   'exit': self.exit,
+		   "'": self.tick
+		   }
 
 		for key in dictionary.keys(): self.dictionary[key] = dictionary[key]
 		for key in compilers.keys(): self.compilers[key] = compilers[key]
@@ -279,7 +297,6 @@ class Timbre(): # a Timbre interpreter
 	def fetch(self): # a - n  return contents of memory using top stack item as the address (processor sized)
 		a = self.dataStack[-1]
 		self.dataStack[-1] = self.memRead(self.dataStack[-1])
-#		print "fetch ",a, self.dataStack[-1], self.memory[1:5]
 	
 	def store(self): # n a -  store next into memory using top as address (processor sized)
 		a, n = self.dataStack.pop(), self.dataStack.pop()
@@ -328,8 +345,10 @@ class Timbre(): # a Timbre interpreter
 		self.memory[self.dp] = self.dataStack.pop() & 0xFF
 		self.dp += 1
 
-	def comma(self): # n -	allocate 1 cell and put n into it
-		self.memWrite(self.dataStack.pop(), self.dp)
+	def comma(self, data=None): # n -	allocate 1 cell and put n into it
+		if not data:
+			data = self.dataStack.pop()
+		self.memWrite(data, self.dp)
 		self.dp += CELLSIZE
 
 	def toHere(self, s):
@@ -424,21 +443,20 @@ class Timbre(): # a Timbre interpreter
 		if not name:
 			name = self.dataStack.pop()
 
+		flag = COMPILING
 		if name in self.dictionary.keys():
 			self.lit(self.dictionary[name])
 		elif name in self.macros.keys():
 			self.lit(self.macros[name])
 		elif name in self.compilers.keys():
 			self.lit(self.compilers[name])
+			flag = BUILDING
 		else:
 			self.lit(False)
+		return flag
 
 	def execute(self, tick=None): # x -	 use the top data stack item as a function call
 		if tick:
-#			print "execute: ", tick
-#			if type(tick) == type([]): # test to see if tick is a list
-#				tick[0](tick[1:]) # if it is, the first one is passed the rest
-#			else:
 			tick() # macros are made into callable routines using lambda
 		else:
 			self.dataStack.pop()()
@@ -458,7 +476,6 @@ class Timbre(): # a Timbre interpreter
 		return s
 
 	def word(self, c=-1): # c -	 parse characters up to c from input to here
-		# dup skip parse
 		if c == -1: c = self.dataStack.pop() # allow two ways of calling
 		self.skip(c)
 		return self.parse(c)
@@ -485,11 +502,9 @@ class Timbre(): # a Timbre interpreter
 			return s[2:]
 
 		def digits(s): # convert string to # in base
-#			print 'convert','"'+s+'"'
 			base = self.getBase()
 			n = 0
 			for c in s:
-#				print 'converting',c
 				c = ord(c) - ord('0')
 				if c > 9:
 					c -= 7
@@ -513,6 +528,12 @@ class Timbre(): # a Timbre interpreter
 		else:
 			self.lit(n)
 
+	def executeCompile(self, tick, flag): # execute or compile by flag over state
+		if flag > self.state:
+			self.execute(tick)
+		else:
+			self.compile(tick)
+
 	def interpret(self, s): # interpret a string of words
 		# transfer string to tib
 		i = self.inp = 0
@@ -525,19 +546,29 @@ class Timbre(): # a Timbre interpreter
 		while True:
 			s = self.word(' ')
 			if not s: return
-			self.find(s)
+			flag = self.find(s)
 			tick = self.dataStack.pop()
 			if tick:
-				self.execute(tick)
+				self.executeCompile(tick, flag)
 			else:
 				self.number(s)
-
-	# macro makers
-	# inner interpreters receive the rest of list from the dictionary
-	def cii(self, l): # constant inner interpreter - variable as well
-#		print "cii list",l
-		self.lit(l[0])
+				self.literal()
 	
+	def literal(self): # decide what to do with number on the stack
+		if self.state == COMPILING:
+			self.compile(lambda n = self.dataStack.pop(): self.lit(n))
+
+	def compile(self, f): # compile a function in the dictionary
+		self.memory[self.dp] = f
+		self.dp += 1
+
+	def tick(self): # return or literalize tick of following word
+		if self.find(self.word(' ')):
+			self.literal()
+		else:
+			self.abort()
+		
+	# macro makers
 	def header(self): # create a header in the dictionary
 		self.word(' ')
 		s = ''
@@ -549,7 +580,6 @@ class Timbre(): # a Timbre interpreter
 
 	def create(self, a): # add a definition to the dictionary
 		name = self.header()
-#		self.macros[s] = [self.cii, a]
 		self.macros[name] = lambda a = a: self.lit(a) # creates a unique call for each macro
 
 	def constant(self): # add a constant defintion to the dictionary
@@ -560,16 +590,106 @@ class Timbre(): # a Timbre interpreter
 		self.comma()
 	
 	def colon(self): # start creating a macro entry
-		pass
+		name = self.header()
+		def colonii(ip):
+			self.ip = ip
+			while True:
+				tick = self.memory[self.ip]
+				if tick == 0:
+					return
+				self.ip += 1
+#				print tick,self.ip,
+				tick()
+#				print self.ip
+		self.macros[name] = lambda ip = self.dp: colonii(ip) # unique call for each macro
+		self.startmacro()
 
 	def semicolon(self): # terminate a macro entry
-		pass
+		self.endmacro()
+		self.lit(0)
+		self.comma()
 	
 	def startmacro(self): # enter macro making mode
-		pass
+		self.state = COMPILING
 		
 	def endmacro(self): # end macro making mode
-		pass
+		self.state = EXECUTING
+
+	# branching and looping interpreters
+	def toI(self): # n -
+		self.returnStack.append(self.dataStack.pop())
+
+	def iFrom(self): # - n
+		self.lit(self.returnStack.pop())
+	
+	def branch(self): # branch to following address
+		self.ip = self.memory[self.ip]
+
+	def zeroBranch(self): # f - branch if f == 0
+		if self.dataStack.pop() == 0:
+			self.branch()
+		else:
+			self.ip += 1
+
+	def minusBranch(self): # decrement and branch if not zero
+		if self.returnStack[-1]:
+			self.returnStack[-1] -= 1
+			self.branch()
+		else:
+			self.returnStack.pop()
+			self.ip += 1
+
+	# Control flow
+	def ahead(self): # - a
+		self.compile(self.branch)
+		self.here()
+		self.compile(0)
+		
+	def ifThen(self): # - a
+		self.compile(self.zeroBranch)
+		self.here()
+		self.compile(0)
+	
+	def endif(self): # a -
+		self.memory[self.dataStack.pop()] = self.dp
+
+	def otherwise(self): # a - a
+		self.ahead()
+		self.swap()
+		self.endif()
+	
+	def begin(self): # - a
+		self.here()
+
+	def again(self): # a -
+		self.compile(self.branch)
+		self.compile(self.dataStack.pop())
+
+	def whileThen(self): # a - a n
+		self.ifThen()
+
+	def repeat(self): # a n -
+		self.swap()
+		self.again()
+		self.endif()
+	
+	def until(self): # a -
+		self.compile(self.zeroBranch)
+		self.compile(self.dataStack.pop())
+
+	def forDo(self): # - a n
+		self.compile(self.toI)
+		self.ahead()
+		self.here()
+	
+	def next(self): # a n -
+		self.swap()
+		self.endif()
+		self.compile(self.minusBranch)
+		self.compile(self.dataStack.pop())
+
+	def exit(self): #
+		self.compile(0)
 
 	# tools
 	def words(self, filter=''): # i:[pattern]  list all words in dictionary
@@ -589,7 +709,6 @@ class Timbre(): # a Timbre interpreter
 
 		n = self.dataStack.pop()
 		a = self.dataStack.pop()
-#		self.output('\n'+'	'*CELLSIZE) # indices
 		self.output(' '*2*CELLSIZE)
 		for i in range(a, a+16):
 			dotn(3, 2, i)

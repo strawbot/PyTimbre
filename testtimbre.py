@@ -50,6 +50,9 @@ def dumpmem(x):
 	x.slash()
 	x.dump()
 
+def show():
+	print "t.memory:", t.memory[0:16], "t.dp",t.dp
+
 t = Timbre()
 ds = t.dataStack
 rs = t.returnStack
@@ -101,14 +104,8 @@ def test(function=nothing, dstack=(), stacks=(0,0), d=(), r=(), rstack=(),
 		testn = ''
 		if test:  testn = ' test '+str(test)
 		print 'testing',function.__name__,'failed'+testn+'.',e
-#			 if diagnostic: exec diagnostic
 		runDiagnostic(t, diagnostic)
-#			if t.output.outs:
-#				print 'output:',t.output.outs
-#				t.output.outs = ''
-
 	finally:
-#			t.output.outs = ''
 		teardown(post)
 
 test() # test test with defaults
@@ -233,29 +230,39 @@ t.memory[10:14] = [1,2,3,4]
 test(t.interpret, stacks=(1,0), d=[0x01020304], arg='10 @', test=4, diagnostic='dumpmem(t)')
 #	test(t.interpret, arg='con', test=4) # need to accept exception
 
-def show():
-	print "t.memory:", t.memory[0:16], "t.dp",t.dp
-
 print 'Test makers:'
-t.interpret('5 constant con')
-test(t.interpret,(),(1,0),[5],arg=' con')
-t.interpret('123 variable foo')
-test(t.interpret,(),(1,0),[1],arg='foo', truth='t.dp==5 and t.memRead(1)==123', test=1)
-t.interpret('123 variable foo')
-test(t.interpret,(),(1,0),[234],arg='234 foo ! foo @', diagnostic='dumpmem(t)', test=2)
+test(t.interpret,(),(1,0),[5],arg='5 constant con con', test=5)
+test(t.interpret,(),(1,0),[1],arg='123 variable foo foo', truth='t.dp==5 and t.memRead(1)==123', test=6)
+test(t.interpret,(),(1,0),[234],arg='123 variable foo 234 foo ! foo @', diagnostic='dumpmem(t)', test=7)
+test(t.interpret, (),(0,0),[], arg=': c1 ; c1',diagnostic='t.words()',test=8)
+test(t.interpret, (),(1,0),[3],arg='1 constant one 2 constant two : c3 one two + ; c3', test=9)
+test(t.interpret, (),(1,0),[9],arg=': c5 1 2 + 3 * ; c5', test=10)
+test(t.interpret, (),(1,0),[9],arg=': c6 1 2 + * ; : c7 3 c6 ; c7', test=11)
+
+print 'Test control:' # if else endif begin again while repeat until for next exit
+test(t.interpret, (),(1,0),[2],arg=': cf1 1 if 2 else 3 endif ; cf1', test=12)
+test(t.interpret, (),(1,0),[3],arg=': cf2 0 if 2 else 3 endif ; cf2', test=13)
+test(t.interpret, arg=': cf3 begin exit again 3 ; cf3', test=14)
+test(t.interpret, (),(1,0),[-1],arg=': cf4 1 begin 1 - dup if exit endif again ; cf4', diagnostic='show()',test=15)
+test(t.interpret, (),(1,0),[0],arg=': cf5 1 begin dup while 1 - repeat ; cf5', test=16)
+test(t.interpret, (),(1,0),[-1],arg=': cf6 1 begin 1 - dup until ; cf6', test=17)
+test(t.interpret, (),(1,0),[0],arg=': cf7 1 1 for 1 - next ; cf7', test=18)
+test(t.interpret, (),(1,0),[2], arg="1 ' dup execute +", test=19)
+test(t.interpret, (),(1,0),[2], arg="1 : cf8 ' dup execute + ; cf8", test=20)
 
 string = ''
-if failed:
-	string = ' Failed',failed,'tests.'
+if failed == 1:
+	string = ' Failed 1 test.'
+elif failed:
+	string = ' Failed '+str(failed)+' tests.'
 print 'Passed',passed,'tests.', string
 
 def printTimbre():
-	print 'data stack:', ds,
-	print 'return stack:', rs
+	if ds:
+		print 'data stack:', ds,
+	if rs:
+		print 'return stack:', rs
 	print 'dictionary(%i):'%len(t.dictionary),
 	t.words()
 
 printTimbre()
-#	print "macros", t.macros
-	
-

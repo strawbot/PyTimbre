@@ -71,7 +71,6 @@ dump    ( a n - ) dump n 16-byte rows of memory starting at address a
 word    ( c - ) parse characters up to c from input to here
 constant    ( n - ) give n a name
 variable    ( n - ) give n a place to be stored at a name
-
 ]    enter macro mode
 [    exit macro mode
 :    start a macro definition
@@ -89,10 +88,10 @@ for    ( n - ) start of a loop which runs n times
 next    end of a for loop
 exit    exit macro
 '    ( - a ) get execution address of following word
+
 "    ( - s ) enclose text up to next " in a count prefixed string
 reveal    allow macro to call itself
 ."    print text up until next "
 (    start of comment till end of line or )
 >b    ( a - ) put machine into execution queue
 help    print list of one liners about words in dictionary
-
