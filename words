@@ -95,3 +95,7 @@ reveal    allow macro to call itself
 (    start of comment till end of line or )
 >b    ( a - ) put machine into execution queue
 help    print list of one liners about words in dictionary
+
+to do:
+ o modify dump so that it will display locations in memory that occupy more that 
+   one byte of data
